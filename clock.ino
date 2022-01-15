@@ -1,8 +1,66 @@
+#include <LittleFS.h>
+#include "clock.h"
+
+void readHandPositions(char *fileName, HandPosition *handPositions) {
+  char fullPathName[50];
+  snprintf(fullPathName, sizeof(fullPathName), "/%d/%s", currentFaceNumber, fileName);
+  
+  Serial.printf("readHandPositions: reading '%s'\n", fullPathName);
+  
+  // Copy file to buffer
+  File file = LittleFS.open(fullPathName, "r");
+  if (!file) {
+    Serial.printf("readHandPositions: unable to open '%s'\n", fullPathName);
+    return;
+  }
+  size_t size = file.size();
+  char* buffer = (char*)malloc(size);
+  if(buffer == NULL) {
+    Serial.printf("readHandPositions: failed to allocate %d bytes\n", size);
+    return;
+  }
+  file.read((uint8_t *)buffer, size);
+  file.close();
+
+  // Parse the buffer
+  uint8_t tickCount = 0;
+  char* line;
+  char* rest = buffer;
+  while ((line = strtok_r(rest, "\n", &rest)) && tickCount < 15) {
+    uint8_t tick = strtol(strtok(line, " "), NULL, 10); // ignore the first token
+    handPositions[tickCount].centerX = strtol(strtok(NULL, " "), NULL, 10);
+    handPositions[tickCount].centerY = strtol(strtok(NULL, " "), NULL, 10);
+    Serial.printf("%d %d %d\n", tick, handPositions[tickCount].centerX, handPositions[tickCount].centerY);
+    tickCount++;
+  }
+  free(buffer);
+}
+
+void drawHourHand(uint8_t tick, boolean erase) {
+  char fileName[50];
+  int fileAngle = tick * 6;
+  snprintf(fileName, sizeof(fileName), "/%d/hoursHand_%s%d.bmp", currentFaceNumber, erase ? "mask_" : "", tick * 6 % 90);
+  uint16_t rotation = tick / 15 * 90;
+  uint8_t rotationX = hoursHandPositions[tick % 15].centerX;
+  uint8_t rotationY = hoursHandPositions[tick % 15].centerY;
+  drawBMPFromFile(clock_center_x, clock_center_y, rotationX, rotationY, rotation, erase, fileName);
+}
+
+void drawMinuteHand(uint8_t tick, boolean erase) {
+  char fileName[50];
+  int fileAngle = tick * 6;
+  snprintf(fileName, sizeof(fileName), "/%d/minutesHand_%s%d.bmp", currentFaceNumber, erase ? "mask_" : "", tick * 6 % 90);
+  uint16_t rotation = tick / 15 * 90;
+  uint8_t rotationX = minutesHandPositions[tick % 15].centerX;
+  uint8_t rotationY = minutesHandPositions[tick % 15].centerY;
+  drawBMPFromFile(clock_center_x, clock_center_y, rotationX, rotationY, rotation, erase, fileName);
+}
+
 void draw_second(int splittedSecond, int mode) {
-  int x = ((SCREEN_DIAMETER - 55) / 2 * sin(pi - (2 * pi) / 60 / SECOND_SPLIT * splittedSecond)) + clock_center_x;
-  int y = ((SCREEN_DIAMETER - 55) / 2 * cos(pi - (2 * pi) / 60 / SECOND_SPLIT * splittedSecond)) + clock_center_y;
+  int x = ((SCREEN_DIAMETER - 35) / 2 * sin(pi - (2 * pi) / 60 / SECOND_SPLIT * splittedSecond)) + clock_center_x;
+  int y = ((SCREEN_DIAMETER - 35) / 2 * cos(pi - (2 * pi) / 60 / SECOND_SPLIT * splittedSecond)) + clock_center_y;
   if (mode == 1)
-    tft.fillCircle(x, y, 4, GC9A01A_DARKGREEN);
+    tft.fillCircle(x, y, 4, GC9A01A_LIGHTGREY);
   else
     tft.fillCircle(x, y, 4, GC9A01A_BLACK);
 }
@@ -63,7 +121,7 @@ int splittedSecond = -1;
 
 boolean ntpMissed = false;
 
-int previousClockSecond = -1;
+int previousClockSecond = 0;
 int millisOffset = 0; // Offset compared to millis() to get partial seconds in sync with the NTP seconds
 
 void updateClock() {
@@ -81,9 +139,9 @@ void updateClock() {
     return;
   }
 
-  if(ntpMissed == true) {
+  if (ntpMissed == true) {
     ntpMissed = false;
-    tft.fillCircle(clock_center_x, clock_center_y, 10, GC9A01A_BLACK);
+    randomClockFace();
   }
 
   timeinfo = localtime (&currentTime); // setup timeinfo -> tm_hour, timeinfo -> tm_min, timeinfo -> tm_sec
@@ -105,21 +163,17 @@ void updateClock() {
   }
 
   if (timeinfo->tm_min != minute) {
-    if(minute % 5 == 0) randomBMP("/clockface%d.bmp");
-    
-    tft.startWrite();
-    
-    draw_minute(minute, 0);
-    draw_hour(hour, minute, 0);
-    
+    if (minute % 5 == 0) {
+      randomClockFace();
+    } else {
+      drawHourHand(hour * 5 % 60 + minute / 12, true);
+      drawMinuteHand(minute, true);
+    }
+
     hour = timeinfo->tm_hour;
     minute = timeinfo->tm_min;
-    
-    draw_minute(minute, 1);
-    draw_hour(hour, minute, 1);
-    
-    tft.endWrite();
-    
-    tft.fillCircle(clock_center_x, clock_center_y, 5, GC9A01A_RED);
+
+    drawHourHand(hour * 5 % 60 + minute / 12, false);
+    drawMinuteHand(minute, false);
   }
 }

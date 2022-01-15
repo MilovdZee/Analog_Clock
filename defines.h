@@ -11,6 +11,8 @@
 // NTP server list to use for syncing time.
 #define NTP_SERVERS "0.nl.pool.ntp.org", "1.nl.pool.ntp.org", "2.nl.pool.ntp.org"
 
+#define NUMBER_OF_FACE_FILES 3
+
 #define TFT_VCC 3V3
 #define TFT_GND GND
 #define TFT_DIN D7

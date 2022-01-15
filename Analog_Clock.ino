@@ -9,8 +9,8 @@
 #include "SPI.h"
 #include "Adafruit_GFX.h"
 #include "ClockTFT.h"
-
 #include "defines.h"
+#include "clock.h""
 
 boolean timeIsSet = false;
 time_t lastNtpSet = 0;
@@ -21,23 +21,49 @@ time_t previousEffectTime = time(nullptr);
 char ssid[60];
 char wifiPassword[60];
 
-int numberOfFacesFiles = 0;
-
 ClockTFT tft(TFT_CS, TFT_DC, TFT_RST);
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 
+uint8_t currentFaceNumber;
+HandPosition hoursHandPositions[15];
+HandPosition minutesHandPositions[15];
+
 // Record the NPT set time
 void timeUpdated() {
   timeIsSet = true;
   lastNtpSet = time(nullptr);
-  Serial.print("NTP Updated: "); Serial.println(ctime(&lastNtpSet));
+  Serial.printf("NTP Updated: % s\n", ctime(&lastNtpSet));
+}
+
+void printFreeRam() {
+  Serial.printf("Free ram: % d bytes\n", ESP.getFreeHeap());
+}
+
+void listAllFilesInDir(String dir_path)
+{
+  Dir dir = LittleFS.openDir(dir_path);
+  while(dir.next()) {
+    if (dir.isFile()) {
+      // print file names
+      Serial.printf("  % s - % d\n", dir_path + dir.fileName(), dir.fileSize());
+    }
+    if (dir.isDirectory()) {
+      // print directory names
+      Serial.printf("Dir: % s / \n", dir_path + dir.fileName());
+      // recursive file listing inside new directory
+      listAllFilesInDir(dir_path + dir.fileName() + " / ");
+    }
+  }
 }
 
 void setup() {
   Serial.begin(115200);
   while (!Serial); // wait for serial attach
+  Serial.println();
+
+  printFreeRam();
 
   // For the ESP the flash has to be read to a buffer
   EEPROM.begin(512);
@@ -50,9 +76,7 @@ void setup() {
   // Setup the wifi
   EEPROM.get(SSID_ADDR, ssid);
   EEPROM.get(WIFI_PASSWORD_ADDR, wifiPassword);
-  Serial.print("\r\nConnecting to WIFI '");
-  Serial.print(String(ssid));
-  Serial.print("'...\r\n");
+  Serial.printf("\nConnecting to WIFI '%s'...", String(ssid));
   tft.fillCircle(clock_center_x, clock_center_y, SCREEN_DIAMETER / 10, GC9A01A_BLUE);
   WiFi.mode(WIFI_STA);
   WiFi.hostname(HOSTNAME);
@@ -103,12 +127,19 @@ void setup() {
     delay(1000);
   }
 
-  // Count the number of faces
-  Dir dir = LittleFS.openDir("/");
-  while (dir.next()) numberOfFacesFiles++;
+  // Show some FS info
+  FSInfo fs_info;
+  LittleFS.info(fs_info);
+  Serial.printf("Total space:      % d bytes\n", fs_info.totalBytes);
+  Serial.printf("Total space used: % d bytes\n", fs_info.usedBytes);
+  Serial.printf("Block size:       % d bytes\n", fs_info.blockSize);
+  Serial.printf("Page size:        % d bytes\n", fs_info.totalBytes);
+  Serial.printf("Max open files:   % d bytes\n", fs_info.maxOpenFiles);
+  Serial.printf("Max path length:  % d bytes\n", fs_info.maxPathLength);
+  listAllFilesInDir(" / ");
 
   // Initialize face
-  randomBMP("/clockface%d.bmp");
+  randomClockFace();
 
   Serial.println();
   Serial.println("Running...");

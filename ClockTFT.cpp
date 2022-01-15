@@ -13,7 +13,7 @@
 ClockTFT::ClockTFT(int8_t cs, int8_t dc, int8_t rst) : Adafruit_GC9A01A(cs, dc, rst) {}
 
 int pixelCount = 0;
-Pixel pixelBuffer[5000];
+Pixel pixelBuffer[6000];
 
 void ClockTFT::writePixel(uint16_t x, uint16_t y, uint16_t color) {
   if (pixelCount < sizeof(pixelBuffer) / sizeof(Pixel)) {

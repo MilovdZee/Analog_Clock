@@ -1,4 +1,3 @@
-
 void handleRoot() {
   String rootForm = String(CSS) + "<html>\
   <body>\
