@@ -13,10 +13,12 @@ to a 32 bit size.
 ## Efficient LittleFS
 To allow for more efficient use of the storage change the blocksize in:
 
-boards.txt:
-   d1_mini.menu.eesz.4M3M.build.spiffs_blocksize=4096
+`boards.txt`:
 
-Maybe also this fil `eagle.flash.4m.ld`:
-   PROVIDE ( _SPIFFS_start = 0x40308000 ); PROVIDE ( _SPIFFS_block = 0x1000 );
+   `d1_mini.menu.eesz.4M3M.build.spiffs_blocksize=4096`
+
+Maybe also this file `eagle.flash.4m.ld`:
+
+   `PROVIDE ( _SPIFFS_start = 0x40308000 ); PROVIDE ( _SPIFFS_block = 0x1000 );`
 
 (This does not seem to work) 
