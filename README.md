@@ -11,14 +11,17 @@ to a 32 bit size.
 - [Arduino ESP8266 LittleFS Filesystem Uploade](https://github.com/earlephilhower/arduino-esp8266littlefs-plugin)
 
 ## Efficient LittleFS
+It would be nice to be able to change the blocksize. But doing the thing described below don't seem to work.
+Probably the implementation of LittleFS doe not support this. I don't know.
+
 To allow for more efficient use of the storage change the blocksize in:
 
-`boards.txt`:
+`boards.txt` (`~/.arduino15/packages/esp8266/hardware/esp8266/3.0.2/boards.txt`):
 
    `d1_mini.menu.eesz.4M3M.build.spiffs_blocksize=4096`
 
-Maybe also this file `eagle.flash.4m.ld`:
+Maybe also this file `eagle.flash.4m.ld` (`~/.arduino15/packages/esp8266/hardware/esp8266/3.0.2/tools/sdk/ld/eagle.flash.4m.ld`):
 
-   `PROVIDE ( _SPIFFS_start = 0x40308000 ); PROVIDE ( _SPIFFS_block = 0x1000 );`
+   `PROVIDE ( _SPIFFS_start = 0x40308000 ); 
+   PROVIDE ( _SPIFFS_block = 0x1000 );`
 
-(This does not seem to work) 

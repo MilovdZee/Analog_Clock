@@ -47,7 +47,9 @@ void listAllFilesInDir(String dir_path)
   while(dir.next()) {
     if (dir.isFile()) {
       // print file names
-      Serial.printf("  % s - % d\n", dir_path + dir.fileName(), dir.fileSize());
+      File file = dir.openFile("r");
+      Serial.printf("  % s - % d\n", dir_path + file.name(), file.size());
+      file.close();
     }
     if (dir.isDirectory()) {
       // print directory names
@@ -117,7 +119,13 @@ void setup() {
   server.on("/wifi", handleWifi);
   server.begin();
 
+  // set the correct block size
+//  lfs_config fsConfig;
+//  fsConfig.block_size = 4096;
+//  LittleFS.setConfig(fsConfig);
+  
   if (!LittleFS.begin()) {
+    Serial.println("LittleFS problem");
     tft.fillScreen(GC9A01A_BLACK);
     String spiffsError = "SPIFFS error";
     tft.getTextBounds(spiffsError, 0, 100, &xPos, &yPos, &width, &height);
@@ -134,7 +142,7 @@ void setup() {
   Serial.printf("Total space used: % d bytes\n", fs_info.usedBytes);
   Serial.printf("Block size:       % d bytes\n", fs_info.blockSize);
   Serial.printf("Page size:        % d bytes\n", fs_info.totalBytes);
-  Serial.printf("Max open files:   % d bytes\n", fs_info.maxOpenFiles);
+  Serial.printf("Max open files:   % d\n", fs_info.maxOpenFiles);
   Serial.printf("Max path length:  % d bytes\n", fs_info.maxPathLength);
   listAllFilesInDir(" / ");
 

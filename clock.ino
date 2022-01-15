@@ -134,7 +134,7 @@ void updateClock() {
       // Flashing red dot in the middle to indicate loss of time
       tft.fillCircle(clock_center_x, clock_center_y, 10, GC9A01A_RED);
     } else {
-      tft.fillCircle(clock_center_x, clock_center_y, 10, GC9A01A_BLACK);
+      tft.fillCircle(clock_center_x, clock_center_y, 10, GC9A01A_BLUE);
     }
     return;
   }
@@ -142,6 +142,8 @@ void updateClock() {
   if (ntpMissed == true) {
     ntpMissed = false;
     randomClockFace();
+    hour = -1;
+    minute = -1;
   }
 
   timeinfo = localtime (&currentTime); // setup timeinfo -> tm_hour, timeinfo -> tm_min, timeinfo -> tm_sec
