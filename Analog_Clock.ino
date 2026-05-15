@@ -182,7 +182,7 @@ void setup() {
   Serial.printf("  Page size       : %d bytes\n", fs_info.pageSize);
   Serial.printf("  Max open files  : %d\n", fs_info.maxOpenFiles);
   Serial.printf("  Max path length : %d bytes\n", fs_info.maxPathLength);
-  listAllFilesInDir("/");
+  //listAllFilesInDir("/");
 
   // Initialize face
   randomClockFace();
@@ -211,6 +211,6 @@ void loop() {
   if (now != last_check_time && now - (3600 * 24) > last_check_time) {
     // run once a day
     last_check_time = now;
-    check_for_updates();
+    //check_for_updates();
   }
 }

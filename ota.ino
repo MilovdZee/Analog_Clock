@@ -11,13 +11,13 @@ static void ota_on_progress(int progress, int total) {
 
   int percentage = progress * 100 / total;
   if (last_shown != percentage) {
+    Serial.printf("OTA update progress: %u\r\n", percentage);
     if (percentage % 10 == 0) {
-      Serial.printf("OTA update progress: %u\r\n", percentage);
+      float angle = 2.0 * pi / 110.0 * percentage;
+      int x = clock_center_x + (SCREEN_DIAMETER / 2 - 50) * sin(angle);
+      int y = clock_center_y - (SCREEN_DIAMETER / 2 - 50) * cos(angle);
+      tft.fillCircle(x, y, 10, GC9A01A_YELLOW);
     }
-    float angle = 2.0 * pi / 110.0 * percentage;
-    int x = clock_center_x + (SCREEN_DIAMETER / 2 - 50) * sin(angle);
-    int y = clock_center_y - (SCREEN_DIAMETER / 2 - 50) * cos(angle);
-    tft.fillCircle(x, y, 10, GC9A01A_YELLOW);
 
     last_shown = percentage;
   }
