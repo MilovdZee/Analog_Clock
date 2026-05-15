@@ -10,7 +10,7 @@
 #include "Adafruit_GFX.h"
 #include "ClockTFT.h"
 #include "defines.h"
-#include "clock.h""
+#include "clock.h"
 
 boolean timeIsSet = false;
 time_t lastNtpSet = 0;
@@ -21,6 +21,12 @@ time_t previousEffectTime = time(nullptr);
 char ssid[60];
 char wifiPassword[60];
 
+WiFiEventHandler gotIpEventHandler;
+WiFiEventHandler disconnectedEventHandler;
+unsigned long lastDisconnectTime = 0;
+const unsigned long RECONNECT_INTERVAL = 30000; // Try forcing a reconnect every 30 seconds
+bool isDisconnected = false;
+
 ClockTFT tft(TFT_CS, TFT_DC, TFT_RST);
 
 ESP8266WebServer server(80);
@@ -29,6 +35,12 @@ ESP8266HTTPUpdateServer httpUpdater;
 uint8_t currentFaceNumber;
 HandPosition hoursHandPositions[15];
 HandPosition minutesHandPositions[15];
+
+// This overrides the default 1-hour interval (in milliseconds)
+// Note: NTP servers usually request a minimum of 15 seconds between polls.
+uint32_t sntp_update_delay_MS_rfc_not_less_than_15000() {
+    return 10 * 60 * 1000UL; // Example: Update every 10 minutes instead
+}
 
 // Record the NPT set time
 void timeUpdated() {
@@ -63,7 +75,18 @@ void setup() {
   Serial.begin(115200);
   while (!Serial); // wait for serial attach
   Serial.println();
+  delay(5000);
+  Serial.printf("\n\n");
 
+  Serial.println("TFT pin info:");
+  Serial.printf("  TFT_DIN: %d\n", TFT_DIN);
+  Serial.printf("  TFT_CLK: %d\n", TFT_CLK);
+  Serial.printf("  TFT_CS : %d\n", TFT_CS);
+  Serial.printf("  TFT_DC : %d\n", TFT_DC);
+  Serial.printf("  TFT_RST: %d\n", TFT_RST);
+  Serial.printf("  TFT_BL : %d\n", TFT_BL);
+
+  Serial.printf("Flash size: %d\n", ESP.getFlashChipSize());
   printFreeRam();
 
   // For the ESP the flash has to be read to a buffer
@@ -77,10 +100,30 @@ void setup() {
   // Setup the wifi
   EEPROM.get(SSID_ADDR, ssid);
   EEPROM.get(WIFI_PASSWORD_ADDR, wifiPassword);
-  Serial.printf("\nConnecting to WIFI '%s'...", String(ssid));
+  Serial.printf("\nConnecting to WIFI '%s'... ", String(ssid));
   tft.fillCircle(clock_center_x, clock_center_y, SCREEN_DIAMETER / 10, GC9A01A_BLUE);
   WiFi.mode(WIFI_STA);
   WiFi.hostname(HOSTNAME);
+  WiFi.persistent(true);
+  WiFi.setAutoReconnect(true);
+
+  // Register Event Handlers
+  gotIpEventHandler = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP& event) {
+    Serial.print("WiFi Restored! IP address: ");
+    Serial.println(event.ip); // Use event data directly
+    isDisconnected = false;
+  });
+
+  disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& event) {
+    Serial.printf("Disconnected! Reason: %u\n", event.reason);
+    
+    // Set baseline tracking when the disconnect first occurs
+    if (!isDisconnected) {
+      isDisconnected = true;
+      lastDisconnectTime = millis();
+    }
+  });
+
   WiFi.begin(String(ssid), String(wifiPassword));
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.println("Connection Failed! Continuing...");
@@ -94,6 +137,8 @@ void setup() {
   Serial.print("IP address: ");
   String ipAddress = WiFi.localIP().toString();
   Serial.println(ipAddress);
+
+  check_for_updates();
 
   tft.setTextSize(2);
   int16_t xPos, yPos;
@@ -132,12 +177,13 @@ void setup() {
   // Show some FS info
   FSInfo fs_info;
   LittleFS.info(fs_info);
-  Serial.printf("Total space:      %d bytes\n", fs_info.totalBytes);
-  Serial.printf("Total space used: %d bytes\n", fs_info.usedBytes);
-  Serial.printf("Block size:       %d bytes\n", fs_info.blockSize);
-  Serial.printf("Page size:        %d bytes\n", fs_info.totalBytes);
-  Serial.printf("Max open files:   %d\n", fs_info.maxOpenFiles);
-  Serial.printf("Max path length:  %d bytes\n", fs_info.maxPathLength);
+  Serial.println("LittleFS info:");
+  Serial.printf("  Total space     : %d bytes\n", fs_info.totalBytes);
+  Serial.printf("  Total space used: %d bytes\n", fs_info.usedBytes);
+  Serial.printf("  Block size      : %d bytes\n", fs_info.blockSize);
+  Serial.printf("  Page size       : %d bytes\n", fs_info.pageSize);
+  Serial.printf("  Max open files  : %d\n", fs_info.maxOpenFiles);
+  Serial.printf("  Max path length : %d bytes\n", fs_info.maxPathLength);
   listAllFilesInDir("/");
 
   // Initialize face
@@ -148,8 +194,25 @@ void setup() {
 }
 
 void loop() {
+  // Non-blocking fallback mechanism if the built-in auto-reconnect gets stuck
+  if (isDisconnected && (millis() - lastDisconnectTime >= RECONNECT_INTERVAL)) {
+    Serial.println("Built-in reconnect stuck. Forcing manual reconnection retry...");
+    lastDisconnectTime = millis();
+    
+    WiFi.disconnect(); // Clear dead state
+    WiFi.begin(String(ssid), String(wifiPassword)); // Force fresh attempt
+  }
+
   ArduinoOTA.handle();
   server.handleClient();
 
   updateClock();
+
+  static time_t last_check_time = -1;
+  time_t now = time(nullptr);
+  if (now != last_check_time && now % (3600 * 24) == 0) {
+    // run once a day
+    last_check_time = now;
+    check_for_updates();
+  }
 }

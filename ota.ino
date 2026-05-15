@@ -30,7 +30,7 @@ void setupOTA() {
     tft.fillCircle(x, y, 10, GC9A01A_YELLOW);
   });
   ArduinoOTA.onError([](ota_error_t error) {
-    char* errorMessage = "Unknown";
+    const char* errorMessage = "Unknown";
     if (error == OTA_AUTH_ERROR) errorMessage = "Auth Failed";
     else if (error == OTA_BEGIN_ERROR) errorMessage = "Begin Failed";
     else if (error == OTA_CONNECT_ERROR) errorMessage = "Connect Failed";

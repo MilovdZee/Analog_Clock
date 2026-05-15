@@ -1,7 +1,7 @@
 #include <LittleFS.h>
 #include "clock.h"
 
-void readHandPositions(char *fileName, HandPosition *handPositions) {
+void readHandPositions(const char *fileName, HandPosition *handPositions) {
   char fullPathName[50];
   snprintf(fullPathName, sizeof(fullPathName), "/%d/%s", currentFaceNumber, fileName);
   
