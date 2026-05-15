@@ -126,14 +126,14 @@ boolean isNtpOlderThanOneHour() {
   return (!timeIsSet) || (time(nullptr) - lastNtpSet) > 3620;
 }
 
-int hour = -1;
-int minute = -1;
-int splittedSecond = -1;
+int8_t hour = -1;
+int8_t minute = -1;
+int16_t splittedSecond = -1;
 
 boolean ntpMissed = false;
 
-int previousClockSecond = 0;
-int millisOffset = 0; // Offset compared to millis() to get partial seconds in sync with the NTP seconds
+uint8_t previousClockSecond = 0;
+int16_t millisOffset = 0; // Offset compared to millis() to get partial seconds in sync with the NTP seconds
 
 void updateClock() {
   currentTime = time(nullptr); // time_t = seconds since epoch

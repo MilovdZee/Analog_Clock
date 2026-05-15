@@ -5,7 +5,7 @@
 void drawBMPFromFile(int xOffset, int yOffset, int rotationX, int rotationY, int rotation, boolean erase, char *fileName) {
   BMPInfo bmpInfo;
   if (readBMPFile(fileName, &bmpInfo)) {
-    Serial.printf("drawBMPFromFile: file '%s', rotationX=%d, rotationY=%d, rotation=%d, erase=%d\n", fileName, rotationX, rotationY, rotation, erase);
+    Serial.printf_P(PSTR("drawBMPFromFile: file '%s', rotationX=%d, rotationY=%d, rotation=%d, erase=%d\n"), fileName, rotationX, rotationY, rotation, erase);
 
     tft.startWrite();
     uint16_t bufferPosition = 0;
@@ -44,9 +44,7 @@ void drawBMPFromFile(int xOffset, int yOffset, int rotationX, int rotationY, int
     printFreeRam();
     free(bmpInfo.pixelBuffer);
   } else {
-    Serial.print("drawBMPFromFile: Failed processing '");
-    Serial.print(fileName);
-    Serial.println("'");
+    Serial.printf_P(PSTR("drawBMPFromFile: Failed processing '%s'\n"), fileName);
   }
 }
 
@@ -60,7 +58,7 @@ void randomClockFace() {
   readHandPositions("minutesHand.pos", minutesHandPositions);
  
   char buffer[50];
-  snprintf(buffer, sizeof(buffer), "/%d/clockface.bmp", currentFaceNumber);
+  snprintf_P(buffer, sizeof(buffer), PSTR("/%d/clockface.bmp"), currentFaceNumber);
   if (initBMP(buffer)) {
     drawBMP(tft);
   }
@@ -79,7 +77,7 @@ boolean initBMP(char* fileName) {
 }
 
 void drawBMP(ClockTFT &tft) {
-  Serial.printf("drawBMP: bitmapOffset=%d\n", bitmapOffset);
+  Serial.printf_P(PSTR("drawBMP: bitmapOffset=%d\n"), bitmapOffset);
   
   tft.startWrite();
   tft.setAddrWindow(0, 0, SCREEN_DIAMETER, SCREEN_DIAMETER);

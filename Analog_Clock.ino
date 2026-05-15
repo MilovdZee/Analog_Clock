@@ -16,15 +16,12 @@ boolean timeIsSet = false;
 time_t lastNtpSet = 0;
 time_t currentTime = time(nullptr); // time_t = seconds since epoch
 struct tm * timeinfo;
-time_t previousEffectTime = time(nullptr);
-
 char ssid[33];
 char wifiPassword[64];
 
 WiFiEventHandler gotIpEventHandler;
 WiFiEventHandler disconnectedEventHandler;
 unsigned long lastDisconnectTime = 0;
-const unsigned long RECONNECT_INTERVAL = 30000; // Try forcing a reconnect every 30 seconds
 bool isDisconnected = false;
 
 ClockTFT tft(TFT_CS, TFT_DC, TFT_RST);
@@ -53,20 +50,18 @@ void printFreeRam() {
   Serial.printf("Free ram: %d bytes\n", ESP.getFreeHeap());
 }
 
-void listAllFilesInDir(String dir_path)
+void listAllFilesInDir(const char *dir_path)
 {
   Dir dir = LittleFS.openDir(dir_path);
   while(dir.next()) {
     if (dir.isFile()) {
-      // print file names
-      Serial.println("   " + dir.fileName() + " - " + dir.fileSize());
+      Serial.printf("   %s - %d\n", dir.fileName().c_str(), (int)dir.fileSize());
     }
     if (dir.isDirectory()) {
-      // print directory names
-      Serial.printf("Dir: %s/\n", dir_path + dir.fileName());
-      
-      // recursive file listing inside new directory
-      listAllFilesInDir(dir_path + dir.fileName() + "/");
+      char subDir[64];
+      snprintf(subDir, sizeof(subDir), "%s%s/", dir_path, dir.fileName().c_str());
+      Serial.printf("Dir: %s\n", subDir);
+      listAllFilesInDir(subDir);
     }
   }
 }
@@ -105,7 +100,7 @@ void setup() {
   ssid[32] = '\0';
   wifiPassword[63] = '\0';
 
-  Serial.printf("\nConnecting to WIFI '%s'... ", String(ssid));
+  Serial.printf("\nConnecting to WIFI '%s'... ", ssid);
   tft.fillCircle(clock_center_x, clock_center_y, SCREEN_DIAMETER / 10, GC9A01A_BLUE);
   WiFi.mode(WIFI_STA);
   WiFi.hostname(HOSTNAME);
@@ -129,7 +124,7 @@ void setup() {
     }
   });
 
-  WiFi.begin(String(ssid), String(wifiPassword));
+  WiFi.begin(ssid, wifiPassword);
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.println("Connection Failed! Continuing...");
     tft.fillCircle(clock_center_x, clock_center_y, SCREEN_DIAMETER / 10, GC9A01A_RED);
