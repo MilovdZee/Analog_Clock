@@ -85,7 +85,7 @@ void setup() {
   printFreeRam();
 
   // For the ESP the flash has to be read to a buffer
-  EEPROM.begin(512);
+  EEPROM.begin(128);
 
   // Setup the LCD
   tft.begin();
@@ -137,6 +137,8 @@ void setup() {
   Serial.print("IP address: ");
   String ipAddress = WiFi.localIP().toString();
   Serial.println(ipAddress);
+
+  check_for_updates();
 
   tft.setTextSize(2);
   int16_t xPos, yPos;
@@ -205,4 +207,12 @@ void loop() {
   server.handleClient();
 
   updateClock();
+  
+  static time_t last_check_time = -1;
+  time_t now = time(nullptr);
+  if (now != last_check_time && now % (3600 * 24) == 0) {
+    // run once a day
+    last_check_time = now;
+    check_for_updates();
+  }
 }

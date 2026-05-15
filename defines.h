@@ -30,6 +30,9 @@
 
 #define SECOND_SPLIT 5
 
+#define BUFFER_SIZE 128 // Small buffer configuration minimizes stack footprints
+#define ERROR_VALUE -1
+
 constexpr int clock_center_x = SCREEN_DIAMETER / 2;
 constexpr int clock_center_y = SCREEN_DIAMETER / 2;
 
