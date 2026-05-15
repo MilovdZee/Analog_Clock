@@ -18,8 +18,8 @@ time_t currentTime = time(nullptr); // time_t = seconds since epoch
 struct tm * timeinfo;
 time_t previousEffectTime = time(nullptr);
 
-char ssid[60];
-char wifiPassword[60];
+char ssid[33];
+char wifiPassword[64];
 
 WiFiEventHandler gotIpEventHandler;
 WiFiEventHandler disconnectedEventHandler;
@@ -78,13 +78,13 @@ void setup() {
   delay(5000);
   Serial.printf("\n\n");
 
-  Serial.println("TFT pin info:");
-  Serial.printf("  TFT_DIN: %d\n", TFT_DIN);
-  Serial.printf("  TFT_CLK: %d\n", TFT_CLK);
-  Serial.printf("  TFT_CS : %d\n", TFT_CS);
-  Serial.printf("  TFT_DC : %d\n", TFT_DC);
-  Serial.printf("  TFT_RST: %d\n", TFT_RST);
-  Serial.printf("  TFT_BL : %d\n", TFT_BL);
+  Serial.println(F("TFT pin info:"));
+  Serial.printf_P(PSTR("  TFT_DIN: %d\n"), TFT_DIN);
+  Serial.printf_P(PSTR("  TFT_CLK: %d\n"), TFT_CLK);
+  Serial.printf_P(PSTR("  TFT_CS : %d\n"), TFT_CS);
+  Serial.printf_P(PSTR("  TFT_DC : %d\n"), TFT_DC);
+  Serial.printf_P(PSTR("  TFT_RST: %d\n"), TFT_RST);
+  Serial.printf_P(PSTR("  TFT_BL : %d\n"), TFT_BL);
 
   Serial.printf("Flash size: %d\n", ESP.getFlashChipSize());
   printFreeRam();
@@ -100,6 +100,11 @@ void setup() {
   // Setup the wifi
   EEPROM.get(SSID_ADDR, ssid);
   EEPROM.get(WIFI_PASSWORD_ADDR, wifiPassword);
+
+  // Clean string arrays ensuring a null terminator exists
+  ssid[32] = '\0';
+  wifiPassword[63] = '\0';
+
   Serial.printf("\nConnecting to WIFI '%s'... ", String(ssid));
   tft.fillCircle(clock_center_x, clock_center_y, SCREEN_DIAMETER / 10, GC9A01A_BLUE);
   WiFi.mode(WIFI_STA);
@@ -137,8 +142,6 @@ void setup() {
   Serial.print("IP address: ");
   String ipAddress = WiFi.localIP().toString();
   Serial.println(ipAddress);
-
-  check_for_updates();
 
   tft.setTextSize(2);
   int16_t xPos, yPos;
@@ -200,19 +203,11 @@ void loop() {
     lastDisconnectTime = millis();
     
     WiFi.disconnect(); // Clear dead state
-    WiFi.begin(String(ssid), String(wifiPassword)); // Force fresh attempt
+    WiFi.begin(ssid, wifiPassword); // Force fresh attempt
   }
 
   ArduinoOTA.handle();
   server.handleClient();
 
   updateClock();
-
-  static time_t last_check_time = -1;
-  time_t now = time(nullptr);
-  if (now != last_check_time && now % (3600 * 24) == 0) {
-    // run once a day
-    last_check_time = now;
-    check_for_updates();
-  }
 }

@@ -3,44 +3,51 @@
 
 void readHandPositions(const char *fileName, HandPosition *handPositions) {
   char fullPathName[50];
-  snprintf(fullPathName, sizeof(fullPathName), "/%d/%s", currentFaceNumber, fileName);
+  snprintf_P(fullPathName, sizeof(fullPathName), PSTR("/%d/%s"), currentFaceNumber, fileName);
   
-  Serial.printf("readHandPositions: reading '%s'\n", fullPathName);
+  Serial.printf_P(PSTR("readHandPositions: reading '%s'\n"), fullPathName);
   
-  // Copy file to buffer
   File file = LittleFS.open(fullPathName, "r");
   if (!file) {
-    Serial.printf("readHandPositions: unable to open '%s'\n", fullPathName);
+    Serial.printf_P(PSTR("readHandPositions: unable to open '%s'\n"), fullPathName);
     return;
   }
-  size_t size = file.size();
-  char* buffer = (char*)malloc(size);
-  if(buffer == NULL) {
-    Serial.printf("readHandPositions: failed to allocate %d bytes\n", size);
-    return;
-  }
-  file.read((uint8_t *)buffer, size);
-  file.close();
 
-  // Parse the buffer
   uint8_t tickCount = 0;
-  char* line;
-  char* rest = buffer;
-  while ((line = strtok_r(rest, "\n", &rest)) && tickCount < 15) {
-    uint8_t tick = strtol(strtok(line, " "), NULL, 10); // ignore the first token
-    handPositions[tickCount].centerX = strtol(strtok(NULL, " "), NULL, 10);
-    handPositions[tickCount].centerY = strtol(strtok(NULL, " "), NULL, 10);
-    Serial.printf("%d %d %d\n", tick, handPositions[tickCount].centerX, handPositions[tickCount].centerY);
+  char line_buf[40]; // Small stack buffer instead of a full heap snapshot
+  
+  // Read lines directly out of the stream buffer using 0 bytes of dynamic Heap
+  while (file.available() && tickCount < 15) {
+    int bytes_read = file.readBytesUntil('\n', line_buf, sizeof(line_buf) - 1);
+    line_buf[bytes_read] = '\0';
+    
+    // Skip empty carriage return lines
+    if (strlen(line_buf) == 0 || line_buf[0] == '\r') continue;
+
+    char *rest = line_buf;
+    char *token = strtok_r(rest, " ", &rest); // Token 1: Index (ignored)
+    
+    token = strtok_r(NULL, " ", &rest);       // Token 2: CenterX
+    if (token) handPositions[tickCount].centerX = strtol(token, NULL, 10);
+    
+    token = strtok_r(NULL, " ", &rest);       // Token 3: CenterY
+    if (token) handPositions[tickCount].centerY = strtol(token, NULL, 10);
+
+    Serial.printf_P(PSTR("%d %d %d\n"), tickCount, handPositions[tickCount].centerX, handPositions[tickCount].centerY);
     tickCount++;
   }
-  free(buffer);
+  file.close();
 }
 
 void drawHourHand(uint8_t tick, boolean erase) {
   char fileName[50];
-  int fileAngle = tick * 6;
-  snprintf(fileName, sizeof(fileName), "/%d/hoursHand_%s%d.bmp", currentFaceNumber, erase ? "mask_" : "", tick * 6 % 90);
-  uint16_t rotation = tick / 15 * 90;
+  snprintf_P(fileName, sizeof(fileName), 
+             PSTR("/%d/hoursHand_%s%d.bmp"), 
+             currentFaceNumber, 
+             erase ? "mask_" : "", 
+             (tick * 6) % 90);
+             
+  uint16_t rotation = (tick / 15) * 90;
   uint8_t rotationX = hoursHandPositions[tick % 15].centerX;
   uint8_t rotationY = hoursHandPositions[tick % 15].centerY;
   drawBMPFromFile(clock_center_x, clock_center_y, rotationX, rotationY, rotation, erase, fileName);
@@ -48,9 +55,13 @@ void drawHourHand(uint8_t tick, boolean erase) {
 
 void drawMinuteHand(uint8_t tick, boolean erase) {
   char fileName[50];
-  int fileAngle = tick * 6;
-  snprintf(fileName, sizeof(fileName), "/%d/minutesHand_%s%d.bmp", currentFaceNumber, erase ? "mask_" : "", tick * 6 % 90);
-  uint16_t rotation = tick / 15 * 90;
+  snprintf_P(fileName, sizeof(fileName), 
+             PSTR("/%d/minutesHand_%s%d.bmp"), 
+             currentFaceNumber, 
+             erase ? "mask_" : "", 
+             (tick * 6) % 90);
+             
+  uint16_t rotation = (tick / 15) * 90;
   uint8_t rotationX = minutesHandPositions[tick % 15].centerX;
   uint8_t rotationY = minutesHandPositions[tick % 15].centerY;
   drawBMPFromFile(clock_center_x, clock_center_y, rotationX, rotationY, rotation, erase, fileName);
