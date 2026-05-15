@@ -2,20 +2,17 @@
 #include <WiFiClientSecure.h>
 #include <Updater.h> 
 
-#define UPDATE_HOST "://githubusercontent.com"
+#define UPDATE_HOST "raw.githubusercontent.com"
 #define UPDATE_PORT 443
 #define VERSION_FILE_LOCATION "/MilovdZee/Analog_Clock/main/firmware/version.txt"
 #define FIRMWARE_FILE_LOCATION "/MilovdZee/Analog_Clock/main/firmware/Analog_Clock.ino-%d.bin"
 
 #define CONNECTION_TIMEOUT 5000
-#define BUFFER_SIZE 128 // Small buffer configuration minimizes stack footprints
-#define ERROR_VALUE -1
-#define CURRENT_FIRMWARE_VERSION 1
 
 BearSSL::WiFiClientSecure client;
 
 // Root CA stored cleanly in Flash memory
-const char root_ca[] PROGMEM =
+const char *root_ca PROGMEM =
   "-----BEGIN CERTIFICATE-----\n" 
   "MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw\n" 
   "TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh\n" 
@@ -50,9 +47,6 @@ const char root_ca[] PROGMEM =
 
 // Instantiated without standard flags so it processes directly from Flash memory
 BearSSL::X509List trustedRootCert(root_ca);
-
-void ota_start() {}
-void ota_on_progress(size_t progress, size_t total) {}
 
 boolean check_for_data() {
   unsigned long timeout = millis();

@@ -138,8 +138,6 @@ void setup() {
   String ipAddress = WiFi.localIP().toString();
   Serial.println(ipAddress);
 
-  check_for_updates();
-
   tft.setTextSize(2);
   int16_t xPos, yPos;
   uint16_t width, height;
@@ -210,7 +208,7 @@ void loop() {
   
   static time_t last_check_time = -1;
   time_t now = time(nullptr);
-  if (now != last_check_time && now % (3600 * 24) == 0) {
+  if (now != last_check_time && now - (3600 * 24) > last_check_time) {
     // run once a day
     last_check_time = now;
     check_for_updates();
