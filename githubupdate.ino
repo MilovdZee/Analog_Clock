@@ -4,8 +4,8 @@
 
 #define UPDATE_HOST "raw.githubusercontent.com"
 #define UPDATE_PORT 443
-#define VERSION_FILE_LOCATION "/MilovdZee/Analog_Clock/main/firmware/version.txt"
-#define FIRMWARE_FILE_LOCATION "/MilovdZee/Analog_Clock/main/firmware/Analog_Clock.ino-%d.bin"
+#define VERSION_FILE_LOCATION "/MilovdZee/Analog_Clock/master/firmware/version.txt"
+#define FIRMWARE_FILE_LOCATION "/MilovdZee/Analog_Clock/master/firmware/Analog_Clock.ino-%d.bin"
 
 #define CONNECTION_TIMEOUT 5000
 
