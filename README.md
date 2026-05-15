@@ -23,6 +23,7 @@ to a 32 bit size.
 
 # LittleFS
 - [Arduino ESP8266 LittleFS Filesystem Upload](https://github.com/earlephilhower/arduino-esp8266littlefs-plugin)
+- [arduino-littlefs-upload](https://github.com/earlephilhower/arduino-littlefs-upload)
 
 ## Efficient LittleFS
 It would be nice to be able to change the blocksize. But doing the thing described below doesn't seem to work.
