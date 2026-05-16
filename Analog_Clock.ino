@@ -81,7 +81,8 @@ void setup() {
   Serial.printf_P(PSTR("  TFT_RST: %d\n"), TFT_RST);
   Serial.printf_P(PSTR("  TFT_BL : %d\n"), TFT_BL);
 
-  Serial.printf("Flash size: %d\n", ESP.getFlashChipSize());
+  Serial.printf("Flash size: %d bytes\n", ESP.getFlashChipSize());
+  Serial.printf("CPU       : %d MHz\n", ESP.getCpuFreqMHz());
   printFreeRam();
 
   // For the ESP the flash has to be read to a buffer
